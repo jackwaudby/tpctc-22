@@ -1,0 +1,124 @@
+\section{Mixing Theory}
+\label{sec:mixing-theory}
+
+This section presents the correctness criteria utilized by MSGT. \Cref{sec:system-model} 
+reproduces the system model from~\cite{adya1999weak}, which is used to define weak isolation levels 
+in~\Cref{sec:weak-isolation}, before the mixing-correct theorem is defined in~\Cref{sec:mixing}.
+
+\subsection{System Model}
+\label{sec:system-model}
+
+In Adya's system model, transactions consist of an ordered sequence of read and write operations to an 
+arbitrary set of data items, book-ended by a \texttt{BEGIN} operation and a \texttt{COMMIT} or an 
+\texttt{ABORT} operation. The set of items a transaction reads from and writes to is termed its 
+\emph{item read set} and \emph{item write set}. Each write creates a \emph{version} of an item, which is 
+assigned a unique timestamp taken from a totally ordered set (e.g., natural numbers) version $i$ of item $x$ is 
+denoted $x_i$; hence, a multiversioned system is assumed. All data items have an initial \emph{unborn} version 
+$\bot$ produced by an initial transaction $\tx{T_{\bot}}$. The unborn version is located at the start of each 
+item's version order. An execution of transactions on a database is represented by a \emph{history}, $H$. This 
+consists of a \emph{partial order of events}, which reflects (i) each transaction's read and write operations, 
+(ii) data item versions read and written and (iii) commit or abort operations, and a  \textit{version order}, 
+which imposes a total order on committed data item versions.
+
+There are three types of dependencies between transactions, which capture the ways in which transactions can 
+\emph{directly} conflict. \emph{Read dependencies} capture the scenario where a transaction reads another 
+transaction's write. \emph{Antidependencies} capture the scenario where a transaction overwrites the version 
+another transaction reads. \emph{Write dependencies} capture the scenario where a transaction overwrites the 
+version another transaction writes. Their definitions are as follows:
+
+\begin{description}
+\item[Read-Depends]
+  Transaction $\tx{T_j}$ \emph{directly read-depends} (\textsf{wr}) on $\tx{T_i}$ if
+  $\tx{T_i}$ writes some version $x_k$ and $\tx{T_j}$ reads $x_k$.
+\item[Anti-Depends]
+  Transaction $\tx{T_j}$ \emph{directly anti-depends} (\textsf{rw}) on $\tx{T_i}$ if
+  $\tx{T_i}$ reads some version $x_k$ and $\tx{T_j}$ writes $x$'s next version after
+  $x_k$ in the version order.
+\item[Write-Depends]
+  Transaction $\tx{T_j}$ \emph{directly write-depends} (\textsf{ww}) on $\tx{T_i}$ if
+  $\tx{T_i}$ writes some version $x_k$ and $\tx{T_j}$ writes $x$'s next version after
+  $x_k$ in the version order.
+\end{description}
+
+Using these definitions, a history can be represented by a \emph{direct serialization graph}, $DSG(H)$.
+Nodes correspond to committed transactions and edges mark \emph{direct dependencies}, or conflicts, between 
+transactions. Again the direction of these dependencies indicate the apparent order of transactions in a 
+serial execution. Anomalies are defined by stating properties about the $DSG$.
+
+To illustrate the difference between an Adya history and a schedule, $s$ from~\Cref{sec:sgt} is given
+again with versions accessed by each operation (version order: $[x_0\ll x_1,y_0\ll y_1,z_2\ll z_3,a_0\ll a_4]$). \Cref{fig:dsg} shows $DSG(H)$.
+$$ H = w_1 [x_1] \ r_2 [x_1] \ r_2 [y_0] \ w_1 [y_1] \ w_2[z_2] \ w_3[z_3] \ r_3 [x_1] \ r_3 [a_0] \ w_4 [a_4] \ c_1 \ c_3 \ c_2 \ c_4 $$
+  
+\input{figs/fig-direct-serialization-graph}
+
+The above \emph{item-based} model can be extended to handle
+\emph{predicate-based} operations~\cite{adya1999weak}. Database operations are
+frequently performed on set of items provided a certain condition called the
+\emph{predicate}, $P$ holds. When a transaction executes a read or write based on a
+predicate $P$, the database selects a version for each item to which $P$ applies, this is
+called the version set of the predicate-based denoted as $\textit{Vset}(P)$. A
+transaction $\tx{T_j}$ changes the matches of a predicate-based read $r_i(P_i)$ if
+$\tx{T_i}$ overwrites a version in $\textit{Vset}(P_i)$.
+
+\subsection{Weak Isolation Levels}
+\label{sec:weak-isolation}
+
+Using the system model in~\Cref{sec:system-model}, definitions of isolation levels are given via a combination of constraints and the 
+prevention of
+types of cycles in the $DSG$. In total 11 isolation levels are presented
+in~\cite{adya1999weak}. To simplify discussions we consider a subset:
+\begin{itemize}
+\item \level{Read Uncommitted:} proscribes anomaly \anomaly{Dirty Write (G0)},
+  the $DSG$ cannot contain cycles consisting entirely of write-depends edges.
+\item \level{Read Committed:} proscribes \anomaly{G0} and anomalies,
+  (i) \anomaly{Aborted Read (G1a)}, transactions cannot read data item versions
+  created by aborted transactions,
+  (ii) \anomaly{Intermediate Reads (G1b)}, transactions cannot read intermediate data item versions, and
+  (iii) \anomaly{Circular Information Flow (G1c)}, the $DSG$ cannot contain cycles
+  consisting of write-depends and read-depends edges.
+\item \level{Repeatable Read:} proscribes \anomaly{G0}, \anomaly{G1}, and \anomaly{Write Skew (G2-item)}, the $DSG$ cannot contain cycles
+  containing one or more item-anti-depends edges.
+% \item \textbf{Consistent View (PL-2+)} proscribes anomaly G-single, the DSG cannot contain a directed cycle with exactly one anti-depends edges, in addition to preventing G1.
+% \item \textbf{Snapshot Isolation (PL-SI)} proscribes anomaly G-S1a, the SSG cannot contain  a write- /read-depends edges between transactions without corresponding start edges. Additionally, proscribing anomaly G-S1b, the SSG cannot contain a cycles containing a single anti-depends edge.
+\item \level{Serializable:} proscribes anomalies \anomaly{G0}, \anomaly{G1},
+  and \anomaly{G2}, the $DSG$ cannot contain any cycles; this extends the coverage to
+  predicate-anti-depends edges.
+\end{itemize}
+
+\subsection{Mixing of Isolation Levels}
+\label{sec:mixing}
+
+To define a correctness criteria for a mixed DBMS, a $DSG$ variant is used to represent a 
+mixed history, referred to as a \textit{mixed serialization graph}, $MSG(H)$. A $MSG$ only includes 
+\textit{relevant} and \textit{obligatory} conflicts. A relevant conflict is a conflict that is pertinent to a 
+given isolation level, e.g., read-depends edges are relevant to \level{Read Committed} transactions but not 
+\level{Read Uncommitted} transactions. An obligatory conflict is a conflict that is relevant to one transaction 
+but not the other, e.g., an item-anti-depends edge between a \level{Read Committed} transaction and a 
+\level{Serializable} transaction is relevant to the \level{Serializable} transaction and not the \level{Read 
+Committed} transaction but still must be included in the $MSG$. Adya defines the edge inclusion rules for an 
+$MSG$ as follows:
+\begin{enumerate}
+\item Write-depends edges are relevant to all transactions regardless of isolation level
+  thus always included.
+\item Read-depends edges are relevant for edges incoming to \level{Read Committed},
+  \level{Repeatable Read}, or \level{Serializable} transactions.
+\item Item-anti-depends edges are included for outgoing edges from \level{Repeatable Read} and
+  \level{Serializable} transactions.
+\item Predicate-anti-depends edges are included for outgoing edges from \level{Serializable}
+  transactions.
+\end{enumerate}
+Now in a mixed DBMS, a history is correct if each transaction is provided the isolation guarantees that pertain 
+to its level leading to the \emph{mixing-correct theorem}~\cite{adya1999weak}. \Cref{fig:msg} illustrates the differences between 
+DSG and MSG representations of a history with the non-relevant and non-obligatory edges removed. 
+
+\begin{theorem}[Mixing-Correct Theorem]
+  A history $H$ is mixing-correct if $MSG(H)$ is acyclic and phenomena \anomaly{G1a} and
+  \anomaly{G1b} do not occur for \level{Read Committed}, \level{Repeatable Read}, and \level{Serializable} transactions.
+\end{theorem}
+
+
+% An MSG is useful for determining correctness if \level{PL-1} and
+% \level{Read Committed} \emph{know} what they are doing and do not modify the database state in
+% an inconsistent manner.
+
+\input{figs/fig-mixed-serialization-graph}

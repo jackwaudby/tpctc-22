@@ -1,0 +1,13 @@
+\begin{table}[htbp]
+    \centering
+    \caption{Example table with access history \{transaction id, operation type\}.}
+    \begin{tabular}{|c|c|c|l|}
+    \hline
+   Id   & Name    & Age   & \multicolumn{1}{|c|}{Access History}                  \\ \hline
+   $x$  & Jack    & 27    & $\{1,w\} \rightarrow \{2,r\} \rightarrow \{3,r\} $    \\ \hline
+   $y$  & Stuart  & 62    & $\{2,r\} \rightarrow \{1,w\} $                        \\ \hline
+   $z$  & Holly   & 21    & $\{2,w\} \rightarrow \{3,w\} $                        \\ \hline
+   $a$  & Heather & 57    & $\{4,w\} \rightarrow \{3,r\} $                        \\ \hline
+    \end{tabular}
+    \label{fig:conflict-detection}
+\end{table}

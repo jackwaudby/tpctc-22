@@ -1,0 +1,28 @@
+\section{Mixing in the Wild}
+\label{sec:mixing-wild}
+
+This section motivates the development of a mixed graph-based scheduler that minimizes unneccessary aborts
+by surveying the isolation levels supported by commercial and open source DBMSs.
+
+It is rare for practical DBMSs to offer applications only a singular isolation level, instead permitting
+transactions to be run at different isolation levels. In order to assess this claim we surveyed the 
+isolation levels offered by 24 DBMSs in~\Cref{tab:survey}\footnote{
+\df~Indicates the default setting,
+$^{\mathrm{a}}$~Referred to as \level{Read Stability},
+$^{\mathrm{b}}$~Behaves like \level{Read Committed} due to MVCC implementation,
+$^{\mathrm{c}}$~Implemented as \level{Snapshot Isolation},
+$^{\mathrm{d}}$~Requires manual lock management,
+$^{\mathrm{e}}$~Behaves like \level{Consistent Read}.}. Classification was performed 
+based on each database's public documentation. We found 7 isolation levels represented:
+\level{Read Uncommitted}, \level{Read Committed}, \level{Cursor Stability}, \level{Snapshot Isolation}, 
+\level{Consistent Read}, \level{Repeatable Read}, and \level{Serializable}. Note, the exact behavior of each 
+isolation level is highly system-dependent. Interestingly, we found 18 databases supported multiple isolation
+levels. Of systems offering a singular isolation level \level{Serializable} was the most common; these systems 
+were typically NewSQL~\cite{DBLP:journals/sigmod/PavloA16} systems, e.g., 
+CockroachDB~\cite{DBLP:conf/sigmod/TaftSMVLGNWBPBR20}. This may suggest a trend away 
+from mixed DBMSs, however, TiDB recently added support for \level{Consistent Read} isolation~\cite{tidb} 
+indicating the utility of weaker isolation in practical systems remains.
+% The prevalence of mixed DBMSs supports 
+% the development of a highly performant mixed concurrency control protocol that minimizes unnecessary aborts.
+
+\input{figs/tab-survey}

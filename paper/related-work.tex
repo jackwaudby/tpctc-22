@@ -1,0 +1,18 @@
+\section{Related Work}
+\label{sec:rel-work}
+
+In recent years, concurrency control research has focused on optimizing protocols for machines with many cores.
+In this context, scalability is often limited by global timestamp counters used to generate transaction ids.
+Silo~\cite{DBLP:conf/sosp/TuZKLM13} and TicToc~\cite{DBLP:conf/sigmod/YuPSD16} are examples of protocols designed to mitigate against this issue. 
+% Optimistic protocols perform well when the conflicts are low, but otherwise introduce a significant 
+% number of aborts. 
+% In an attempt to combat this issue, mostly-optimistic concurrency control (MOCC) combines 
+% 2PL, for high contented rows, with OCC for less contended rows. 
+PSSI~\cite{DBLP:conf/icde/RevilakOO11} uses a graph-based scheduler on top of anti-dependencies to 
+minimize the unnecessary aborts, but its many-core performance is restricted as it receives a global lock for its certifier graph.
+This paper was inspired by the graph-based
+approach taken in~\cite{DBLP:conf/icde/Durner019}, which avoids the global timestamp and single-threaded exclusive validation 
+phase bottlenecks.
+Adya's isolation theory has been used in ELLE~\cite{DBLP:journals/pvldb/AlvaroK20} to experimentally test the isolation guarantees provided by databases. ELLE infers an Adya dependency graph from client-observed  transactions and check for cycles. It is also used in IsoDiff~\cite{DBLP:journals/pvldb/GanRRB020}, a tool which aids 
+developers in debugging the anomalies caused by weak isolation.
+

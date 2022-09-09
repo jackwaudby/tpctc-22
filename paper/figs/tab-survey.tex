@@ -1,0 +1,45 @@
+\begin{table}[htbp]
+  \caption{Isolation Levels Supported by Open Source \& Commercial DBMSs.}
+  \begin{center}
+  \scriptsize
+    \begin{tabular}{|l|c|c|c|c|c|c|c|}
+      \hline
+      \textbf{Database}&\multicolumn{7}{|c|}{\textbf{Isolation Level}} \\
+      \cline{2-8}
+      \textbf{System}      &\bi{RU} &\bi{RC} &\bi{CS} &\bi{SI} &\bi{CR} &\bi{RR} &\bi{S}\\
+      \hline
+      Actian Ingres 11.0   &\y      &\y      &\y      &\nn     &\nn    &\y       &\y\df\\
+      Clustrix 5.2         &\nn     &\y\ft{e}&\nn     &\nn     &\nn    &\y\ft{*c}&\y   \\
+      CockroachDB 20.1.5   &\nn     &\nn     &\nn     &\nn     &\nn    &\nn      &\y\df\\
+      Google Spanner       &\nn     &\nn     &\nn     &\nn     &\nn    &\nn      &\y\df\\
+      Greenplum 6.8        &\y\ft{b}&\y\df   &\nn     &\nn     &\nn    &\y       &\nn  \\
+      Dgraph 20.07         &\nn     &\nn     &\nn     &\y\df   &\nn    &\nn      &\nn  \\
+      FaunaDB 2.12         &\nn     &\nn     &\nn     &\y      &\nn    &\nn      &\y\df\\
+      Hyper                &\nn     &\nn     &\nn     &\nn     &\nn    &\nn      &\y   \\
+      IBM Db2 for z/OS 12.0&\y      &\y\ft{a}&\y\df   &\nn     &\nn    &\y       &\nn  \\
+      MySQL 8.0            &\y      &\y      &\nn     &\nn     &\nn    &\y\df    &\y   \\
+      MemGraph 1.0         &\nn     &\nn     &\nn     &\y\df   &\nn    &\nn      &\nn  \\
+      MemSQL 7.1           &\nn     &\y\ft{*e}&\nn    &\nn     &\nn    &\nn      &\nn  \\
+      MS SQL Server 2019   &\y      &\y\df   &\nn     &\y      &\nn    &\y       &\y   \\
+      Neo4j 4.1            &\nn     &\y\df   &\nn     &\nn     &\nn    &\nn      &\y   \\
+      NuoDB 4.1            &\nn     &\y      &\nn     &\nn     &\y\df  &\nn      &\nn  \\
+      Oracle 11g 11.2      &\nn     &\y\df   &\nn     &\y      &\nn    &\nn      &\nn  \\
+      Oracle BerkeleyDB    &\y      &\y      &\y      &\y      &\nn    &\nn      &\y   \\
+      Oracle BerkeleyDB JE &\y      &\y      &\nn     &\nn     &\nn    &\y\df    &\y   \\
+      Postgres 12.4        &\y\ft{b}&\y\df   &\nn     &\nn     &\nn    &\y\ft{c} &\y   \\
+      SAP HANA             &\nn     &\y\df   &\nn     &\y      &\nn    &\nn      &\nn  \\
+      SQLite 3.33          &\y      &\nn     &\nn     &\nn     &\nn    &\nn      &\y\df\\
+      TiDB 4.0             &\nn     &\nn     &\nn     &\y\df   &\y     &\nn      &\nn  \\
+      VoltDB 10.0          &\nn     &\nn     &\nn     &\nn     &\nn    &\nn      &\y\df\\
+      YugaByteDB 2.2.2     &\nn     &\nn     &\nn     &\y\df   &\nn    &\nn      &\y   \\
+      \hline
+    %   \multicolumn{8}{l}{\df~Indicates the default setting.} \\
+    %   \multicolumn{7}{l}{$^{\mathrm{a}}$~Referred to as \bi{Read Stability}.} \\
+    %   \multicolumn{7}{l}{$^{\mathrm{b}}$~Behaves like \bi{Read Committed} due to MVCC implementation.} \\
+    %   \multicolumn{7}{l}{$^{\mathrm{c}}$~Implemented as \bi{Snapshot Isolation}.} \\
+    %   \multicolumn{7}{l}{$^{\mathrm{d}}$~Requires manual lock management.} \\
+    %   \multicolumn{7}{l}{$^{\mathrm{e}}$~Behaves like \bi{Consistent Read}.} \\
+    \end{tabular}
+    \label{tab:survey}
+  \end{center}
+\end{table}

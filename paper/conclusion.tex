@@ -1,0 +1,18 @@
+\section{Conclusion}
+\label{sec:msgt-conclusion}
+
+In this paper we presented mixed serialization graph testing, a graph-based scheduler that 
+leverages Adya's mixing-correct theorem to permit transactions to execute at different isolation levels.
+When workloads contain transactions running at weaker isolation levels, MSGT is able to outperform 
+serializable graph-based concurrency control by up to 28\%. Additionally, MSGT scales as the number of 
+cores is increased, an important property  given modern hardware. Like SGT, MSGT minimizes the number 
+of aborted transactions, accepting all useful schedules under the mixing-correct theorem, which greatly 
+improves user experience. 
+As part of future work we wish to extend our performance 
+evaluation to include industry standard benchmarks such as TPCx-IoT~\cite{tpcx-iot} and TPC-C~\cite{tpcc}.
+% Additionally, we presented two further optimizations, reduced relevant DFS and 
+% early commit that further reduce aborts and decreases latency respectively. 
+In summary, this paper 
+strengthens recent work refuting the assumption that graph-based concurrency control is impractical.
+
+

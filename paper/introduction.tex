@@ -1,0 +1,98 @@
+\section{Introduction}
+\label{sec:introduction}
+
+% Concurrency control is a vital component of a database management system (DBMS).
+In a database management system (DBMS) concurrency control is responsible for ensuring the 
+effects of 
+% multiple 
+concurrently executing transactions are isolated from each other, providing 
+each with the illusion of running alone in the
+DBMS. This is captured by the correctness criteria \emph{serializability}: if
+transactions are assumed to be individually correct, then an execution of transactions 
+equivalent to a serial execution of the same 
+% set of 
+transactions guarantees a correct DBMS state~\cite{DBLP:books/aw/BernsteinHG87}.
+
+Practically, DBMSs provide \emph{conflict serializability} which is sufficient for
+guaranteeing serializability. Conflict serializability is based on \emph{conflicts} between 
+transactions. Two transactions conflict if 
+% they
+both operate on the same data item and at 
+least one operation is a write. A conflict imposes an order between transactions.
+If a serial execution can be found that respects the order imposed by conflicts then the
+execution is conflict serializable~\cite{DBLP:books/aw/BernsteinHG87}. The goal of 
+concurrency control protocols can be reformulated as allowing as many theoretically 
+possible conflict serializable executions without reducing DBMS performance.
+
+Implementing serializable transaction processing efficiently is difficult.
+% and a significant amount of research has focused on making it performant. 
+The classical approach 
+is \emph{two-phase locking} (2PL)~\cite{DBLP:journals/cacm/EswarranGLT76}.
+Such pessimistic approaches perform well under high contention, but suffer when
+workloads are dominated by read-only transactions. Optimistic approaches such as 
+\emph{timestamp ordering} and \emph{optimistic concurrency control}~\cite{DBLP:journals/tods/KungR81} perform better in low contention workloads, but 
+% suffer from a high number of . 
+exhibit many unnecessary aborts when contention is high.
+However, each 
+% of the above 
+approach sacrifices a degree of concurrency to achieve higher throughput, 
+approximating the complete space of conflict serializable executions. To illustrate this, 
+consider concurrent transactions $T_W$ and $T_R$ both attempt to access a single data item, 
+$x$. Assume $T_W$ holds a write lock on $x$, and $T_R$ wishes to read $x$. Under 2PL, 
+depending on the deadlock detection strategy used, one of $T_W$ or $T_R$ will be aborted. 
+Thus, discounting a perfectly legal conflict serializable schedule. 
+
+An alternative approach is 
+% to providing serializable transaction processing 
+\emph{serialization graph testing} 
+(SGT)~\cite{DBLP:books/aw/BernsteinHG87,DBLP:conf/icde/Durner019}. In SGT, the 
+scheduler maintains an acyclic \emph{conflict graph} of the execution it controls. 
+For each operation in a transaction, each conflict is determined and represented by an edge in the conflict graph;
+% conflicts are determined and the corresponding edges  inserted into the conflict graph, 
+a cycle check is then performed before executing the operation, if a cycle is detected then the transaction is aborted. SGT has the theoretically optimal property of avoiding unnecessary aborts, 
+accepting all conflict serializable executions. 
+% The perceived reason why 
+Despite its advantageous theoretical properties, SGT has seldom been utilized in practical systems owing to the computational costs of maintaining an acyclic graph, notably 
+the cost of cycle checking. Recent work has refuted this perceived wisdom. 
+In~\cite{DBLP:conf/icde/Durner019} it was demonstrated how SGT can be 
+implemented efficiently in a many-core database, offering comparable, and often 
+higher, performance when compared to traditional and contemporary concurrency control 
+protocols.
+
+Despite recent advances, serializable transaction processing performance often remains unsatisfactory for application demands. Another tool at DBMSs 
+disposal to increase performance is to execute transactions at \emph{weak isolation} levels, 
+e.g., \level{Read Committed}. Here, the number of permissible schedules is increased at the
+expense of potentially allowing non-serializable behavior, e.g., \anomaly{Fuzzy Reads}. 
+Weak isolation is pervasive in real world systems, with most systems offering a range of 
+isolation levels; a comprehensive survey of the isolation levels supported by commercial 
+and open source databases is given in~\Cref{tab:survey}. A database that allows concurrent 
+transactions to be executed at different isolation levels is said to be 
+\emph{mixed}~\cite{adya1999weak}. For example, transaction $T_{RC}$ can run at \level{Read Committed} and transaction $T_{S}$ at
+\level{Serializable}.
+
+The classical method to implement a mixed DBMS is to opt for a 2PL-variant in which 
+transactions to vary the duration they hold locks~\cite{DBLP:conf/ds/GrayLPT76}. For 
+example, $T_{RC}$ would release read locks on data items immediately after performing 
+the read operation, whereas $T_S$  holds all locks until commit time. This mechanism
+and others used in mixed DBMSs suffer from the same problem as their
+serializable equivalents: some valid executions are prevented leading to unnecessary
+aborts. This begs the question, how can SGT be extended to support transactions
+executed at weak isolation levels, whilst accepting all and only valid executions? Such an approach
+would permit higher concurrency and performance. In~\cite{adya1999weak} Adya provides a graph-based system model for defining weak isolation 
+% definitions for the plethora of weak  isolation levels in terms of types of cycles precluded in conflict graphs 
+and describes the \emph{mixing-correct theorem}, a correctness criteria for a mixed schedule. 
+This paper presents \emph{mixed serialization graph testing} (MSGT), which 
+accept all valid schedules under the mixing-correct theorem, thus maintaining 
+SGT's property of minimizing aborts. We evaluate MSGT's performance using the YCSB benchmark~\cite{DBLP:conf/cloud/CooperSTRS10} 
+that has been adapted to generate transactions with different isolation 
+requirements.
+
+The rest of the paper is structured as follows:
+\Cref{sec:sgt} provides an overview of serialization graph testing 
+and discusses the adaptations made in~\cite{DBLP:conf/icde/Durner019} to optimize SGT
+for a many-core DBMS.
+\Cref{sec:mixing-wild} provides a survey of isolation levels supported by 24 DBMSs highlighting the prevalence of mixed DBMSs and
+demonstrating the utility of MSGT.
+\Cref{sec:mixing-theory} describes Adya's mixing-correct theorem.
+\Cref{sec:msgt} presents mixed serialization graph testing.
+\Cref{sec:msgt-evaluation} evaluates MSGT using the YCSB benchmark, before \Cref{sec:msgt-conclusion} concludes.

@@ -1,0 +1,16 @@
+\begin{figure}[htbp]
+  \centering
+  \subcaptionbox{Throughput $vs.$ $U$.\label{fig:update-a}}{%
+    \includegraphics[width=0.57\linewidth]{figs/ycsb_update_rate_thpt}%
+  }\par\medskip
+  \subcaptionbox{Abort rate $vs.$ $U$\label{fig:update-b}}{%
+    \includegraphics[width=0.57\linewidth]{figs/ycsb_update_rate_abr}%
+  }\par\medskip
+  \subcaptionbox{Average latency $vs.$ $U$.\label{fig:update-c}}{%
+    \includegraphics[width=0.57\linewidth]{figs/ycsb_update_rate_lat}%
+  }\par\medskip
+  \caption{Update Rate - Performance measurements for the protocols as the
+    proportion of update transaction is varied from 0\% to 100\% with medium contention,
+    $\theta=0.7$, and a low proportion of serializable transactions, $\omega=0.2$.}
+  \label{fig:update-exp}
+\end{figure}

@@ -1,0 +1,125 @@
+\section{Serialization Graph Testing}
+\label{sec:sgt}
+
+This section presents serialization graph testing. 
+\Cref{sec:sgt-description} describes the conflict graph theorem and how it is used by SGT.
+In~\Cref{sec:sgt-algo-adjust}, the algorithmic adjustments
+made in~\cite{DBLP:conf/icde/Durner019} are given, before~\Cref{sec:sgt-many-core-opt} describes the 
+many-core optimized graph data structure used in~\cite{DBLP:conf/icde/Durner019}, which serves as the basis for mixed serialization graph testing.
+
+\subsection{Protocol Description}
+\label{sec:sgt-description}
+
+% Conflict graph theorem 
+An execution of transactions can be represented by a \emph{schedule}, a time ordered 
+sequence of their operations. For example, consider transactions $T_1$, $T_2$, and $T_3$ shown in
+schedule $s$ below.
+$$ s = w_1 [x] \ r_2 [x] \ r_2 [y] \ w_1 [y] \ w_2[z] \ w_3[z] \ r_3 [x] \ r_3 [a] \ w_4 [a] \ c_1 \ c_3 \ c_2 \ c_4 $$
+This schedule can be represented by a \emph{conflict graph} $CG(s)$, shown in~\Cref{fig:conflict-graph}. 
+Nodes represent transactions and conflicting operations $a_i$ of $T_i$ and $b_j$ of $T_j$ such 
+that $a_i[x] < b_j[x]$, where $ \ T_i \neq T_j$, are represented by an edge $T_i \rightarrow T_j$;
+possible conflict pairs are $(a,b) \in [(r,w),(w,r),(w,w)]$. For example, in $s$, $T_2$ reads $x$ 
+after $T_1$ writes to $x$, thus there exists an edge from $T_1$ to $T_2$ in~\Cref{fig:conflict-graph}.
+Changing the order of conflicting operations \emph{could} alter the behavior of at least one 
+transaction. Therefore, an execution of transactions is conflict serializable if a serial ordering of
+transactions that satisfies all conflict edges can be found. Such a serial ordering exists iff the 
+conflict graph is acyclic. This is known as the \emph{conflict graph theorem}~\cite{DBLP:books/aw/BernsteinHG87}. 
+Note, $s$ is not conflict serializable because $CG(s)$ in~\Cref{fig:conflict-graph} contains a cycle.
+
+\begin{theorem}[Conflict Graph Theorem]
+  A schedule $s$ is conflict serializable iff its corresponding conflict graph
+  $CG(s)$ is acyclic.
+\end{theorem}
+
+\input{figs/fig-conflict-graph}
+
+% SGT description 
+SGT directly utilizes the conflict graph theorem by maintaining an acyclic conflict graph. 
+For each operation, conflicts are determined and edges inserted into the graph. An important point 
+to note is the orientation of edge insertions: a transaction only inserts edges incoming to \emph{itself}. 
+After edge insertion, a cycle check is performed \emph{before} executing the operation. If 
+executing the operation would introduce a cycle the offending transaction is aborted and its edges removed. At commit time, 
+a final cycle check is executed, if no cycle is found the transaction commits and removes its edges. In short, 
+SGT provides serializability by ensuring the acyclic invariant. 
+
+% No false negatives 
+% The SGT implementation in~\cite{DBLP:conf/icde/Durner019} is now described as this forms the basis for MSGT. 
+
+\subsection{Algorithmic Adjustments} 
+\label{sec:sgt-algo-adjust}
+
+Due to space constraints nodes must be pruned 
+from the conflict graph. The SGT algorithm 
+sketched in~\Cref{sec:sgt-description} allows
+transactions to commit with incoming edges if 
+they pass a cycle check. Under this scheme 
+simply deleting nodes 
+of committed transactions can lead to subtle 
+serialization violations.
+Assume in~\Cref{fig:conflict-graph}, $T_3$ has 
+committed and $T_2$ is active. If $T_3$ is 
+removed
+upon commitment, $T_2$ may subsequently perform 
+an operation that introduces a cycle with $T_3$, 
+but which goes undetected due to $T_3$'s removal, introducing a serialization error. To solve this, in~\cite{DBLP:conf/icde/Durner019} a transaction can commit iff it has no incoming edges, 
+else delaying until this condition is met.
+As transactions only insert edges incoming to themselves, after issuing a commit request, no more 
+incoming edges are added. Thus, once all incoming edges are removed from the committing node, via the parent node aborting or committing,
+it will not be in a cycle.
+
+This rule also achieves two desirable properties: \emph{recoverability} and \emph{order preservation}. 
+Recoverability ensures failures do not leave the database in an inconsistent state. 
+In $s$, $T_1$ writes $x$, then $T_2$ reads $x$. If $T_2$ commits before $T_1$, $T_1$ may subsequently abort, at 
+which point $T_2$ has read from a value that never existed. Delaying $T_2$'s commit until it has no incoming edges 
+prevents this issue; if $T_1$ aborts then $T_2$ is also aborted. \emph{Order preservation} ensures the real-time commit order matches the 
+serialization order. In $s$, $T_4$ overwrites the value $a$ read by $T_3$, thus
+in the serial order: $T_3 \rightarrow T_4$. If $T_4$ commits before $T_3$ no recoverability issues 
+are introduced, but the real-time commit order does not match the serialization order. Delaying $T_4$'s commit 
+until it has no incoming edges avoids this, providing users with an improved, more intuitive, experience.
+
+\subsection{Many-Core Optimizations}
+\label{sec:sgt-many-core-opt}
+
+% Graph data structure 
+Many-core DBMSs use optimistic approaches as their pessimistic counterparts suffer from poor performance as the core count 
+increases. A common bottleneck in optimistic approaches is an exclusive single-threaded verification phase. Regards SGT, 
+in~\cite{DBLP:conf/icde/Durner019} to avoid a global lock for graph operations, a data structure with a node-local locking 
+protocol is used. Nodes in the graph each store a transaction status (committed, active, aborted) and two sets of pointers representing 
+incoming and outgoing edges. Nodes can then be locked in two 
+modes:
+\begin{itemize}
+    \item \textbf{\emph{Shared mode:}} transactions can concurrently access the node for edge insertions, edge 
+    deletions, and cycle checking. Edge sets guarantee thread-safe concurrent access for scans, insertions, and 
+    deletes under the shared lock. 
+    \item \textbf{\emph{Exclusive mode:}} used for the  commit-critical check for incoming edges. 
+\end{itemize}
+
+The protocol works as follows: when a transaction $T_x$ identifies a conflict with transaction $T_y$ it first
+checks if an edge already exists from $T_y$ to $T_x$, if so, no additional work is needed. 
+Else, $T_x$ acquires a shared lock on $T_y$'s node. If $T_y$ is active, then an edge pointer to $T_x$ is 
+inserted into $T_y$'s outgoing edge set and an edge pointer from $T_y$ is inserted into $T_x$'s incoming edge 
+set.
+$T_x$ then checks for a cycle using a \emph{reduced depth-first search} (DFS)
+algorithm. Reduced DFS begins at the validating node ($T_x$) and traverses only the portion of the graph that is needed; 
+each step holds nodes in shared lock mode.
+At commit time, $T_x$ acquires an exclusive lock on its node and checks for incoming edges. If there are none, 
+$T_x$ commits and shared locks are acquired on each node in $T_x$'s outgoing edge set and the 
+edge from $T_x$ removed. Else, there exists at least one incoming edge and the exclusive lock is released and the check is 
+repeated. 
+Another common bottleneck is the reliance on a global timestamp 
+allocator, this is avoided in~\cite{DBLP:conf/icde/Durner019} by letting conflict graph nodes double up as transaction ids.
+
+SGT requires a mechanism to derive conflicts.
+In~\cite{DBLP:conf/icde/Durner019} rows store a sequential history of accesses. 
+Each access stores the operation type, read or write, and the transaction id.
+Decoupling the access information from the graph data structure decreases contention.
+Note, sequentially ordered access is ensured by per-row spin-locks which are released immediately 
+after the operation completes, i.e., the lock is not held until commit time, an improvement over lock-based approaches.
+
+% \input{figs/fig-conflict-detection}
+
+In summary, the SGT implementation in~\cite{DBLP:conf/icde/Durner019} uses a commit rule to simplify node removal, 
+decouples conflict detection, and employs a highly parallel graph structure that allows concurrent cycle checking. In 
+particular, this protocol scales well as the commit critical check only shortly blocks other threads from accessing a node 
+and only the part of the conflict graph needed for validation is traversed. Lastly, it minimizes unnecessary aborts, 
+accepting all conflict serializable schedules and provides an ideal baseline for the development of MSGT. 

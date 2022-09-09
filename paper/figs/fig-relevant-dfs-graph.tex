@@ -1,0 +1,43 @@
+\begin{figure}
+  \centering
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \begin{tikzpicture}[node distance=0cm]
+      \node (t1) [vertex,xshift=0cm,yshift=0cm] {$T_1$};
+      \node[align=center] at (0,-0.8) {\scriptsize{\texttt{Read}}\\\scriptsize{\texttt{Committed}}};
+      \node (t2) [vertex,xshift=2cm,yshift=0cm] {$T_2$};
+      \node[align=center] at (2,-0.8) {\scriptsize{\texttt{Serializable}}};
+      \draw [edge] (t1) to  [out=-45,in=-135] node [midway,below] {wr} (t2);
+      \draw [edge] (t2) to  [out=135,in=45]  node [midway,above] {rw}  (t1);
+    \end{tikzpicture}
+    \caption{MSG}
+    \label{fig:msg-all}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \begin{tikzpicture}[node distance=0cm]
+      \node (t1) [vertex,xshift=0cm,yshift=0cm] {$T_1$};
+      \node[align=center] at (0,-0.8) {\scriptsize{\texttt{Read}}\\\scriptsize{\texttt{Committed}}};
+      \node (t2) [vertex,xshift=2cm,yshift=0cm] {$T_2$};
+      \node[align=center] at (2,-0.8) {\scriptsize{\texttt{Serializable}}};
+      \draw [green,edge] (t1) to  [out=-45,in=-135] node [midway,below] {wr} (t2);
+    \end{tikzpicture}
+    \caption{$T_1$'s view}
+    \label{fig:msg-t1}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \begin{tikzpicture}[node distance=0cm]
+      \node (t1) [vertex,xshift=0cm,yshift=0cm] {$T_1$};
+      \node[align=center] at (0,-0.8) {\scriptsize{\texttt{Read}}\\\scriptsize{\texttt{Committed}}};
+      \node (t2) [vertex,xshift=2cm,yshift=0cm] {$T_2$};
+      \node[align=center] at (2,-0.8) {\scriptsize{\texttt{Serializable}}};
+      \draw [red,edge] (t1) to  [out=-45,in=-135] node [midway,below] {wr} (t2);
+      \draw [red,edge] (t2) to  [out=135,in=45]  node [midway,above] {rw}  (t1);
+    \end{tikzpicture}
+    \caption{$T_2$'s view}
+    \label{fig:msg-t2}
+  \end{subfigure}
+  \caption{Mixed serialization graph and transaction's relevant views.}
+  \label{fig:relevant-dfs}
+\end{figure}

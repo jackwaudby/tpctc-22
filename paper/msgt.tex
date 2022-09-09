@@ -1,0 +1,118 @@
+\section{Mixed Serialization Graph Testing}
+\label{sec:msgt}
+
+This section presents mixed serialization graph testing. 
+\Cref{sec:msgt-description} describes the protocol design.
+% \Cref{sec:msgt-optimizations} discusses optimizations.
+\Cref{sec:msgt-discussion} outlines MSGT's advantages and disadvantages. 
+Lastly, \Cref{sec:impl-deta} gives implementation details.
+
+\subsection{Protocol Design}
+\label{sec:msgt-description}
+
+MSGT blends together the SGT implementation from~\Cref{sec:sgt} with the mixing-correct theorem 
+from~\Cref{sec:mixing-theory}. Rather than using the graph data structure in~\Cref{sec:sgt-many-core-opt}
+to represent a conflict graph, in MSGT it is used to represent a mixed serialization graph with one addition: nodes
+include transaction's desired isolation level. For each operation, conflicts 
+are determined using the transaction's isolation level and the edge inclusion rules for a mixed 
+serialization graph enumerated in~\Cref{sec:mixing}: when a transaction $T_i$ detects a conflict with $T_j$ it 
+is inserted into the mixed graph if the conflict is relevant to $T_i$ or obligatory for $T_j$. No changes are 
+necessary to the per-row meta-data as all direct dependencies can be derived 
+from the access history. After edge insertion, a cycle check is performed \emph{before} executing the 
+operation. If executing the operation would introduce a cycle the offending transaction is aborted. At commit 
+time, as in~\cite{DBLP:conf/icde/Durner019} a transaction can commit if and only if it has no incoming edges. 
+This simplifies node deletion and provides order preservation. Note, recoverability in no longer ensured as 
+under the mixing-correct theorem it is permissible for a \level{Read Uncommitted} transaction to read from a
+transaction that subsequently aborts.  
+
+% \subsection{Optimizations}
+% \label{sec:msgt-optimizations}
+
+% The algorithm above is sufficient to satisfy the mixing-correct theorem. However, the graph data structure
+% does not make a distinction between the types of conflict in incoming and outgoing edge sets, which can lead 
+% to transactions unnecessarily aborting due to detection of a cycle that is not applicable to its isolation level. 
+
+% \input{figs/fig-relevant-dfs-graph}
+
+% In~\Cref{fig:msg-all}, the MSG contains a cycle between two transactions, $T_1$ 
+% executed at \level{Read Committed} and $T_2$ executed at \level{Serializable}. As can be seen 
+% in~\Cref{fig:msg-t1}, the edges relevant to $T_1$ do not form a cycle, but without consideration of edge 
+% types it is possible that $T_1$ traverses the \textsf{rw} edge, detects
+% the cycle and unnecessarily aborts. In~\Cref{fig:msg-t2}, it is clear that only $T_2$ is required abort in 
+% this scenario. This can be solved by storing distinct edge sets for each conflict type and when cycle checking 
+% a \emph{reduced relevant DFS} is executed. Reduced relevant DFS only traverses edges relevant 
+% to a transaction's isolation level. Thus in~\Cref{fig:relevant-dfs}, $T_1$ would traverse only \textsf{ww} or 
+% \textsf{wr} edges and not detect the global cycle in the MSG, i.e., it would only find cycles involving 
+% write-depends and read-depends edge, preventing \anomaly{G0} and \anomaly{G1} anomalies.
+
+% Storing edge sets for each conflict type facilitates another optimization that helps reduce latency. 
+% The commit rule states: transactions are prevented from committing until they have no incoming edges. In MSGT,
+% there is potential that a transaction is prevented from committing due to an incoming edge not 
+% relevant to its isolation level. For example, consider $T_{1}$ in~\Cref{fig:relevant-dfs}, a \level{Read Committed} transaction with a 
+% single incoming anti-depends \textsf{rw} edge. The transaction running at 
+% weaker isolation is being stalled from committing by an obligatory edge.
+% With distinct edge sets an \emph{early commit rule} can be employed. 
+% Under this rule transactions can commit \emph{with} incoming edges, provided these are not
+% relevant to the transaction's isolation level, i.e., $T_{1}$ could commit immediately.
+% Informally, this is safe from a correctness stand point as if a transaction has no incoming
+% relevant edges then it can never lie on a cycle relevant to its isolation level, e.g., $T_{1}$
+% could never be involved in \anomaly{G0} or \anomaly{G1c} cycles. 
+% % In the example above, $T_{RC}$ would not unnecessarily waste CPU
+% % cycles checking for a cycle that does not and will not exist.
+
+% Care, however, must be taken regards node deletion from the MSG if the early commit rule
+% used. To illustrate this, $T_{1}$ is still a member in a cycle for a transaction
+% committing at a higher isolation level ($T_{2}$). Removing the node upon commit would allow the
+% possibility of missed cycles and violation of the mixing-correct
+% theorem. Thus, regardless of isolation level a node can only be scheduled for removal from
+% the MSG once \textit{all} incoming edges have been removed. A possible implementation is
+% to offload the management of committed but ``in-play'' nodes to a background thread that
+% periodically checks if all edges have been removed, at which point the nodes can be deleted
+% and recycled; this would allow nodes to be accessed, if needed, during cycle checking
+% initiated by other nodes. 
+
+
+\subsection{Discussion}
+\label{sec:msgt-discussion}
+
+As seen in~\Cref{sec:mixing-wild} many DBMSs offer weak isolation levels and 
+thus a considerable portion of applications are built atop such guarantees.
+Typically, mixed isolation is an after thought as DBMSs chase performance, in
+MSGT mixed isolation is a catered for as a \emph{first-class citizen}. Such an approach
+provides a higher degree of concurrency and hence performance, whilst also providing
+the optimal property of no unnecessary aborts. 
+% Reduced relevant DFS further minimizes aborts and 
+% allows for quicker cycle detection, as only the relevant portion of the graph needs be searched. 
+% The early commit rule should provide lower latency for transactions that require weaker isolation levels.
+% Unfortunately under this rule, the real-time commit order may no longer match the serialization order, 
+% i.e., order-preservation is violated. However, in the search for high performance this may be a trade-off the database 
+% operator is willing to make.
+
+It is worth noting the utility of weak isolation is limited to applications that can tolerate
+potentially non-serializable behavior. Additionally, if a workload exhibits low contention or is designed in 
+a manner such that anomalies provably do not occur~\cite{DBLP:journals/tods/FeketeLOOS05}, then the additional overhead of 
+managing the MSG has little benefit.
+
+\subsection{Implementation Details}
+\label{sec:impl-deta}
+
+MSGT was implemented in our prototype in-memory DBMS which has a pluggable
+concurrency control module\footnote{\url{https://github.com/jackwaudby/spaghetti}}.
+The DBMS has a pool of worker threads and each transaction is pinned to a specific
+worker thread for its duration. Each worker thread has an independent workload
+generator. Thus when a transaction is committing we repeatedly execute
+the commit routine (check for incoming edges).
+
+To ensure high operation throughput under a concurrent workload data
+structures use atomic operations were appropriate. For safe memory reclamation in a concurrent environment
+epoch-based garbage collection is used~\cite{DBLP:phd/ethos/Fraser04} and nodes' edge sets are recycled after a 
+transaction is committed and deleted.
+
+Adya's system model is defined in terms of a multiversion model, but as the MSGT
+scheduler allows transactions to optimistically read dirty records, the possibility of
+cascading aborts is introduced. Unwinding writes due to cascading aborts lead to
+unnecessary system load and which is not useful for both user and system.
+Therefore, only one uncommitted transaction is allowed to modify a data item.
+Also, the prototype DBMS does not currently support predicate-based operations, thus
+an item-based read/write model is assumed. Hence, some isolation levels, e.g.,
+\level{Repeatable Read} can not be captured. 

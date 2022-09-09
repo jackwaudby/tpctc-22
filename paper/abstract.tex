@@ -1,0 +1,48 @@
+\begin{abstract}
+Concurrency control is an integral component in achieving high performance in many-core databases. 
+Implementing serializable transaction processing efficiently is challenging. One approach, 
+\emph{serialization graph testing} (SGT) 
+faithfully implements the \emph{conflict graph theorem} by aborting only those transactions 
+% directly utilizes the \emph{conflict graph theorem}, which states that a 
+% schedule is conflict serializable if and only if its associated conflict graph is acyclic. By aborting 
+% only transactions 
+that would actually
+% truly 
+violate serializability (introduce a cycle), thus maintaining
+the required acyclic invariant. 
+Alternative approaches, such as \emph{two-phase locking}, 
+disallow certain valid 
+% reduce the amount of accepted 
+schedules to increase throughput, whereas SGT has the theoretically optimal property of accepting all 
+and only
+conflict serializable schedules. Historically, SGT was deemed 
+% nonviable due to concerns over the 
+unviable in practice due to the high
+% compuatational costs of...graph.
+computational costs of maintaining an acyclic graph. 
+Research has however overturned this historical view by utilising the increased computational 
+power available due to modern hardware.  
+% this conventional wisdom has been refuted by recent research. 
+% Building on this result, this paper demonstrates how graph-based concurrency control can be 
+% extended to support transactions executing at weaker isolation levels, whilst maintaining the desirable 
+% property of minimizing aborts. 
+Furthermore, a survey of 24 databases suggests that not all transactions demand conflict serializability but different 
+transactions can perfectly settle for different, weaker isolation levels which typically require relatively lower overheads.  
+Thus, in such a mixed environment, providing only the isolation level required of each transaction should, in theory,  
+increase throughput and reduce aborts. The aim of this paper is to extend SGT for mixed environments subject to Adya's 
+\emph{mixing-correct theorem} and demonstrate the resulting performance improvement. We augment the YCSB benchmark to 
+generate transactions with different isolation requirements. For certain workloads, \emph{mixed serialization graph testing} can achieve up to a 28\% increase in throughput and a 19\% 
+decrease in aborts over SGT.
+% \emph{Mixed serialization graph testing} (MSGT) leverages Adya's weak 
+% isolation theory accepting all valid schedules under the \emph{mixing-correct theorem}. MSGT's practical 
+% usefulness is illustrated by surveying isolation levels supported by 24 databases. To evaluate MSGT's 
+% performance, the YCSB benchmark is augmented to generate transactions with different isolation 
+% requirements. MSGT can achieve up to a 17\% increase in throughput and a 9.5\% decrease in aborts over SGT.
+
+
+
+
+
+\keywords{Databases \and Concurrency Control \and Weak Isolation \and Serialization Graph Testing \and Mixing-Correct Theorem 
+\and YCSB}
+\end{abstract}

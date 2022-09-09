@@ -1,0 +1,16 @@
+\begin{figure}[htbp]
+  \centering
+    \begin{tikzpicture}[node distance=0cm]
+      \node (t1) [vertex, xshift=0cm, yshift=0cm] {$T_1$};
+      \node (t2) [vertex, xshift=2cm, yshift=0cm] {$T_2$};
+      \node (t3) [vertex, xshift=4cm, yshift=0cm] {$T_3$};
+      \node (t4) [vertex, xshift=6cm, yshift=0cm] {$T_4$};
+      \draw [edge] (t1) -- (t2);
+      \draw [edge] (t2) -- (t3);
+      \draw [edge] (t3) -- (t4);
+      \draw [edge] (t1) to  [out=-45,in=-135]  (t3);
+      \draw [edge] (t2) to  [out=135,in=45]  (t1);
+    \end{tikzpicture}
+  \caption{Conflict graph representation of $s$.}
+  \label{fig:conflict-graph}
+\end{figure}
