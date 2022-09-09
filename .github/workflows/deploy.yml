@@ -10,11 +10,12 @@ jobs:
         uses: xu-cheng/texlive-action/full@v1
         with:
           run: |
+            cd paper
             pdflatex ms.tex          
       - name: Move file to site 🚚
         run: |
           mkdir output/
-          mv ms.pdf output/
+          mv paper/ms.pdf output/
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.3.3
         with:
