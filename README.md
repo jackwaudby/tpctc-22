@@ -3,5 +3,5 @@
 Presented at TPCTC'22 co-located with VLDB'22.
 
 - Paper
-- Slides 
+- [Slides](https://github.com/jackwaudby/tpctc-22/blob/main/slides/tpctc_jack_waudby.pdf)
 - Code
