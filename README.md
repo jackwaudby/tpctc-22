@@ -4,4 +4,5 @@ Presented at [TPCTC'22](https://www.tpc.org/tpctc/tpctc2022/default5.asp) co-loc
 
 - Paper
 - [Slides](https://github.com/jackwaudby/tpctc-22/blob/main/slides/tpctc_jack_waudby.pdf)
-- Code
+- [Code](https://github.com/jackwaudby/spaghetti)
+- Video
